@@ -1,13 +1,10 @@
 <?php
-
-    
-
     class Tietokanta
     {
         
         public function __construct()
         {
-            require_once("/var/www/private/db_connection.php");
+            require_once("db_connection.php");
             $this->db_servername = $db_servername;
             $this->db_username = $db_username;
             $this->db_password = $db_password;
@@ -18,7 +15,7 @@
         {
 
         }
-      
+
         public function KirjauduSisaan($tunnus, $salasana)
         {
             $connection = new mysqli($this->db_servername, $this->db_username, $this->db_password, $this->db_name);
@@ -40,12 +37,8 @@
             {
                 while($row = $result->fetch_assoc()) {
                     $luokka = $row["luokka"];
-                    $tunnus = $row["tunnus"];
-
-                    $_SESSION["luokka"] = $luokka;
-                    $_SESSION["tunnus"] = $tunnus;
                     $connection->close();
-                    
+                    return $luokka;
                 }
             } 
         
@@ -54,135 +47,49 @@
                 return null;
             }
             $connection->close();
-        }
+        }    
 
-        /*
-            Palauttaa mökin (palvelun) varaukset taulukossa, eli siis varauksen aloituspvm ja lopetuspvm
-        */
-        public function HaePalvelunVarauskalenteri($palveluId)
-        {
-            $connection = new mysqli($this->db_servername, $this->db_username, $this->db_password, $this->db_name);
-            
-            if ($connection->connect_error)
-            {
-                die("Ei saada yhteyttä tietokantaan.");
-            }
-
-            $query = "SELECT * FROM mokin_varauskalenteri WHERE palvelu_id = '" . $palveluId . "'";
-
-            $result = $connection->query($query);
-
-            $varauskalenteri = array();
-
-            $i = 0;
-
-            if ($result->num_rows > 0) 
-            {
-                while($row = $result->fetch_assoc()) 
-                {
-                    $varauskalenteri[$i++] = $row;
-                } 
-            } 
-
-            else {
-                $varauskalenteri = null;
-                echo "Ei yhtään tulosta.";
-            }
-
-            $connection->close();
-
-            return $varauskalenteri;
-        }
-
-
-        /*
-            Etsii asiakasta etu- ja/tai sukunimen perusteella ja palauttaa taulukon Asiakas-objekteista
-        */
-        public function HaeAsiakkaat($hakusana)
-        {
-            $connection = new mysqli($this->db_servername, $this->db_username, $this->db_password, $this->db_name);
-            
-            if ($connection->connect_error)
-            {
-                die("Ei saada yhteyttä tietokantaan.");
-            }
-            $q = mysqli_real_escape_string($connection, $hakusana);
-            $query = "SELECT * FROM Asiakas WHERE etunimi LIKE '" . $q . "%' OR sukunimi LIKE '" . $q . "%'";
-
-            $result = $connection->query($query);
-
-            $asiakkaat = array();
-
-            $i = 0;
-
-            if ($result->num_rows > 0) 
-            {
-                while($row = $result->fetch_assoc()) 
-                {
-                    $asiakas = new Asiakas($row["asiakas_id"], $row["etunimi"], $row["sukunimi"], $row["lahiosoite"], $row["postitoimipaikka"], $row["postinro"], $row["email"], $row["puhelinnro"]);
-                    $asiakkaat[$i++] = $asiakas;
-                } 
-            } 
-
-            else {
-                $asiakkaat = null;
-                echo "Ei yhtään tulosta.";
-            }
-
-            $connection->close();
-
-            return $asiakkaat;
-        }
-
-        // Tommin osaa
+        // TIMON OSA  //
+        
+        
 
         /** 
-         * hakee tietokannasta kaikki toimipisteet
-         * palauttaa listan toimipiste-objekteja
+         * Listaa asiakkaat tietokannasta
          */
-        public function HaeToimipisteet() {
-
+        public function HaeAsiakkaat()
+        {
             $connection = new mysqli($this->db_servername, $this->db_username, $this->db_password, $this->db_name);
-            
+        
             if ($connection->connect_error)
             {
                 die("Ei saada yhteyttä tietokantaan.");
             }
-
-            $query = "SELECT * FROM Toimipiste";
-
-            $listToimipisteet = array();
+        
+            $query = "SELECT * FROM asiakas";
+                    
+            $listAsiakkaat = array();
 
             $result = $connection->query($query);
-
+                    
             if ($result->num_rows > 0) 
             {
                 while($row = $result->fetch_assoc()) {
-
-                    $toimipiste = new Toimipiste($row["toimipiste_id"], $row["nimi"], $row["lahiosoite"], 
-                    $row["postitoimipaikka"], $row["postinro"], $row["email"], $row["puhelinnro"]);
-
-                    $listToimipisteet[] = $toimipiste;
+                    $asiakas = new Asiakkaat($row["asiakas_id"], $row["etunimi"], $row["sukunimi"],
+                    $row["lahiosoite"], $row["postitoimipaikka"], $row["postinro"], $row["email"], $row["puhelinnro"]);
+                                
+                    $listAsiakkaat[] = $asiakas;
                 }
-
-                
             } 
             else {
-                $listToimipisteet = null;
-                echo "Ei yhtään tulosta.";
+                $listAsiakkaat = null;
             }
-
             $connection->close();
-
-            return $listToimipisteet;
+                    
+            return $listAsiakkaat;
         }
-        
-        /** 
-         * Ottaa vastaan toimipisteen id:n
-         * hakee sen perusteella toimipisteen tietokannasta
-         * palauttaa yhden toimipiste-objektin
-         */
-        public function HaeToimipiste($toimipisteenID) {
+        // Hakee yksittäisen asiakkaan tiedot //
+        // EI KÄYTÖSSÄ //
+        public function HaeAsiakas($asiakkaanID) {
 
             $connection = new mysqli($this->db_servername, $this->db_username, $this->db_password, $this->db_name);
             
@@ -191,32 +98,60 @@
                 die("Ei saada yhteyttä tietokantaan.");
             }
 
-            $query = "SELECT * FROM Toimipiste WHERE toimipiste_id = '$toimipisteenID'";
+            $query = "SELECT * FROM asiakas WHERE asiakas_id = '$asiakkaanID'";
 
             $result = $connection->query($query);
 
             if ($result->num_rows > 0) 
             {
                 $row = $result->fetch_assoc();
-                $toimipiste = new Toimipiste($row["toimipiste_id"], $row["nimi"], $row["lahiosoite"], 
+                $asiakas = new Asiakkaat($row["asiakas_id"], $row["etunimi"], $row["sukunimi"], $row["lahiosoite"], 
                     $row["postitoimipaikka"], $row["postinro"], $row["email"], $row["puhelinnro"]);
                 
             } 
             else {
-                $toimipiste = null;
+                $asiakas = null;
                 // echo "Ei yhtään tulosta.";
             }
 
             $connection->close();
 
-            return $toimipiste;
+            return $asiakas;
         }
+        // Hakee yksittäisen laskun tiedot
+        public function HaeLaskut($asiakkaanID)
+        {
+            $connection = new mysqli($this->db_servername, $this->db_username, $this->db_password, $this->db_name);
 
-        /**
-         * Ottaa vastaan toimipiste-objektin
-         * päivittää toimipisteen tiedot tietokantaan
-         */
-        public function PaivitaToimipiste($toimipiste) {
+            if ($connection->connect_error)
+            {
+                die("HaeLaskut ei saa yhteyttä tietokantaan.");
+            }
+
+            $query = "SELECT * FROM lasku WHERE asiakas_id ='$asiakkaanID'";
+
+            $result = $connection->query($query);
+
+            if ($result->num_rows > 0) 
+            {
+                while($row = $result->fetch_assoc()) {
+                    $laskut = new Lasku($row["lasku_id"], $row["asiakas_id"], $row["varaus_id"], $row["sukunimi"],
+                    $row["lahiosoite"], $row["postitoimipaikka"], $row["postinro"], $row["summa"], $row["alv"]);
+                    $listLaskut[] = $laskut;     
+                
+                }
+            } 
+                
+            else 
+            {
+                echo "Ei laskuja tietokannassa.";
+            }
+            $connection->close();
+
+            return $listLaskut;
+        }
+        //Päivittää muokattavan laskun tiedot
+        public function PaivitaLasku($lasku) {
 
             $connection = new mysqli($this->db_servername, $this->db_username, $this->db_password, $this->db_name);
             
@@ -225,15 +160,18 @@
                 die("Ei saada yhteyttä tietokantaan.");
             }
 
-            $toimipiste_id = $connection->real_escape_string($toimipiste->getToimipisteId());
-            $nimi = $connection->real_escape_string($toimipiste->getNimi());
-            $lahiosoite = $connection->real_escape_string($toimipiste->getLahiosoite());
-            $postitoimipaikka = $connection->real_escape_string($toimipiste->getPostitoimipaikka());
-            $postinro = $connection->real_escape_string($toimipiste->getPostinro());
-            $email = $connection->real_escape_string($toimipiste->getEmail());
-            $puhelinnro = $connection->real_escape_string($toimipiste->getPuhelinnro());
+            $lasku_id = $connection->real_escape_string($lasku->getLaskuId());
+            $varaus_id = $connection->real_escape_string($lasku->getVarausId());
+            $asiakas_id = $connection->real_escape_string($lasku->getAsiakasId());
+            $sukunimi = $connection->real_escape_string($lasku->getSukunimi());
+            $lahiosoite = $connection->real_escape_string($lasku->getLahiosoite());
+            $postitoimipaikka = $connection->real_escape_string($lasku->getPostitoimipaikka());
+            $postinro = $connection->real_escape_string($lasku->getPostinro());
+            $summa = $connection->real_escape_string($lasku->getSumma());
+            $alv = $connection->real_escape_string($lasku->getAlv());
 
-            $query = "UPDATE Toimipiste SET nimi='$nimi', lahiosoite='$lahiosoite', postitoimipaikka='$postitoimipaikka', postinro='$postinro', email='$email', puhelinnro='$puhelinnro' WHERE toimipiste_id='$toimipiste_id'";
+            $query = "UPDATE lasku SET lasku_id='$lasku_id', varaus_id='$varaus_id', asiakas_id='$asiakas_id', sukunimi='$sukunimi', lahiosoite='$lahiosoite',
+             postitoimipaikka='$postitoimipaikka', postinro='$postinro', summa='$summa', alv='$alv' WHERE lasku_id='$lasku_id'";
 
             $result = $connection->query($query);
 
@@ -241,19 +179,48 @@
                 $message = "Tietojen tallentaminen onnistui";
                 
             } else {
-                $message = "Sattui odottamaton virhe, koeta hiukan myöhemmin uudelleen";
+                $message = "Sattui odottamaton virhe, yritä myöhemmin uudelleen";
             }
 
             $connection->close();
             return $message;
         }
-        
-        /** 
-         * Ottaa vastaan toimipisteen id:n ja palvelun tyypin,
-         * hakee näiden perusteella toimipisteeseen kuuluvat palvelut
-         * Palauttaa listan palvelu-objekteista
-         */
-        public function haeToimipisteeseenKuuluvatPalvelut($toimipisteenID, $palvelunTyyppi) {
+        //Lisää uuden laskun tietokantaan
+        public function LisaaLasku($lasku) {
+
+            $connection = new mysqli($this->db_servername, $this->db_username, $this->db_password, $this->db_name);
+            
+            if ($connection->connect_error)
+            {
+                die("Ei saada yhteyttä tietokantaan.");
+            }
+            
+            $lasku_id = $connection->real_escape_string($lasku->getLaskuId());
+            $varaus_id = $connection->real_escape_string($lasku->getVarausId());
+            $asiakas_id = $connection->real_escape_string($lasku->getAsiakasId());
+            $sukunimi = $connection->real_escape_string($lasku->getSukunimi());
+            $lahiosoite = $connection->real_escape_string($lasku->getLahiosoite());
+            $postitoimipaikka = $connection->real_escape_string($lasku->getPostitoimipaikka());
+            $postinro = $connection->real_escape_string($lasku->getPostinro());
+            $summa = $connection->real_escape_string($lasku->getSumma());
+            $alv = $connection->real_escape_string($lasku->getAlv()); 
+            
+            $query = "INSERT INTO lasku (lasku_id, varaus_id, asiakas_id, sukunimi, lahiosoite, postitoimipaikka, postinro, summa, alv) VALUES ('$lasku_id', '$varaus_id', '$asiakas_id', '$sukunimi' ,'$lahiosoite', '$postitoimipaikka', '$postinro' '$summa', '$alv')";
+
+            if($connection->query($query) === TRUE)
+            {
+                $message = "Tietojen tallentaminen onnistui";
+            }
+            else
+            {
+                $message = "Sattui odottamaton virhe, yritä myöhemmin uudelleen";
+            }
+
+            $connection->close();
+            return $message;
+        }
+        // Hakee yksittäisen laskun tiedot
+        public function HaeLaskunTiedot($laskunID) {
 
             $connection = new mysqli($this->db_servername, $this->db_username, $this->db_password, $this->db_name);
 
@@ -262,35 +229,30 @@
                 die("Ei saada yhteyttä tietokantaan.");
             }
 
-            $query = "SELECT * FROM Palvelu WHERE tyyppi='$palvelunTyyppi' AND toimipiste_id='$toimipisteenID'";
+            $query = "SELECT * FROM lasku WHERE lasku_id='$laskunID'";
 
             $result = $connection->query($query);
 
             if ($result->num_rows > 0) 
             {
-                $palvelulista = array();
+                
                 while($row = $result->fetch_assoc()) {
-                    $palvelu = new Palvelu($row["palvelu_id"], $row["toimipiste_id"], $row["nimi"], 
-                    $row["tyyppi"], $row["kuvaus"], $row["hinta"], $row["alv"]);
-
-                    $palvelulista[] = $palvelu;
+                    $laskuntiedot = new Lasku($row["lasku_id"], $row["asiakas_id"], $row["varaus_id"], $row["sukunimi"],
+                    $row["lahiosoite"], $row["postitoimipaikka"], $row["postinro"], $row["summa"], $row["alv"]);
+                        
+                
                 }
             } 
             else 
             {
-                $palvelulista = null;
+                $laskuntiedot = null;
             }
 
             $connection->close();
-            return $palvelulista;
-        }
-
-        /** 
-         * Ottaa vastaan palvelun id:n
-         * hakee sen perusteella palvelun tietokannasta
-         * palauttaa yhden palvelu-objektin
-         */
-        public function haePalvelu($palvelunID) {
+            return $laskuntiedot;
+        } 
+        // Poistaa laskun tietokanasta
+        public function PoistaLasku($laskunID) {
 
             $connection = new mysqli($this->db_servername, $this->db_username, $this->db_password, $this->db_name);
 
@@ -299,60 +261,21 @@
                 die("Ei saada yhteyttä tietokantaan.");
             }
 
-            $query = "SELECT * FROM Palvelu WHERE palvelu_id='$palvelunID'";
+            $query = "DELETE FROM lasku WHERE lasku_id='$laskunID'";
 
-            $result = $connection->query($query);
+            //$result = $connection->query($query);
 
-            if ($result->num_rows > 0) 
+            if($connection->query($query) === TRUE)
             {
-                $row = $result->fetch_assoc();
-                $palvelu = new Palvelu($row["palvelu_id"], $row["toimipiste_id"], $row["nimi"], 
-                    $row["tyyppi"], $row["kuvaus"], $row["hinta"], $row["alv"]);
-            } 
-            else 
-            {
-                $palvelu = null;
+                $message = "Tietojen poistaminen onnistui";
             }
-
-            $connection->close();
-            return $palvelu;
-        }
-
-        /**
-         * Ottaa vastaan palvelu-objektin
-         * päivittää palvelun tiedot tietokantaan
-         */
-        public function PaivitaPalvelu($palvelu) {
-
-            $connection = new mysqli($this->db_servername, $this->db_username, $this->db_password, $this->db_name);
-            
-            if ($connection->connect_error)
+            else
             {
-                die("Ei saada yhteyttä tietokantaan.");
-            }
-
-            $palvelu_id = $connection->real_escape_string($palvelu->getPalveluId());
-            $toimipiste_id = $connection->real_escape_string($palvelu->getToimipisteId());
-            $nimi = $connection->real_escape_string($palvelu->getNimi());
-            $tyyppi = $connection->real_escape_string($palvelu->getTyyppi());
-            $kuvaus = $connection->real_escape_string($palvelu->getKuvaus());
-            $hinta = $connection->real_escape_string($palvelu->getHinta());
-            $alv = $connection->real_escape_string($palvelu->getAlv());
-
-            $query = "UPDATE Palvelu SET toimipiste_id='$toimipiste_id', nimi='$nimi', tyyppi='$tyyppi', kuvaus='$kuvaus', hinta='$hinta', alv='$alv' WHERE palvelu_id='$palvelu_id'";
-
-            $result = $connection->query($query);
-
-            if ($result){
-                $message = "Tietojen tallentaminen onnistui";
-                
-            } else {
-                $message = "Sattui odottamaton virhe, koeta hiukan myöhemmin uudelleen";
+                $message = "Sattui odottamaton virhe, yritä myöhemmin uudelleen";
             }
 
             $connection->close();
             return $message;
-        }
-
+        } 
     }
 ?>
